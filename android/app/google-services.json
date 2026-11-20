@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "973466579550",
+    "project_id": "pizzamine-73c33",
+    "storage_bucket": "pizzamine-73c33.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:973466579550:android:8d99eaf3f9e4b132c6facf",
+        "android_client_info": {
+          "package_name": "com.example.pizzamine"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDKhsHSgLA_24vDFctGvSkKqYh18G3tXiM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
