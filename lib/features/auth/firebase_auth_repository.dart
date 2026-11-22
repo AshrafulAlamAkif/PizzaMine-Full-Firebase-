@@ -1,5 +1,7 @@
+// Step 5 — Firebase Authentication Implementation
 import 'package:firebase_auth/firebase_auth.dart';
 
+import '../../core/exceptions.dart';
 import 'auth_model.dart';
 import 'auth_repository.dart';
 
@@ -18,6 +20,35 @@ class FirebaseAuthRepository implements AuthRepository {
     );
   }
 
+  AppException _handleError(FirebaseAuthException error) {
+    switch (error.code) {
+      case 'invalid-email':
+        return const AppException('Please enter a valid email address.');
+
+      case 'user-not-found':
+      case 'wrong-password':
+      case 'invalid-credential':
+        return const AppException('Incorrect email or password.');
+
+      case 'email-already-in-use':
+        return const AppException('This email is already registered.');
+
+      case 'weak-password':
+        return const AppException('Please choose a stronger password.');
+
+      case 'network-request-failed':
+        return const AppException('Network error. Please try again.');
+
+      case 'too-many-requests':
+        return const AppException('Too many attempts. Try again later.');
+
+      default:
+        return const AppException(
+          'Something went wrong. Please try again.',
+        );
+    }
+  }
+
   @override
   Stream<AppUser?> get authStateChanges {
     return _firebaseAuth.authStateChanges().map(
@@ -30,33 +61,52 @@ class FirebaseAuthRepository implements AuthRepository {
     required String email,
     required String password,
   }) async {
-    final credential = await _firebaseAuth.signInWithEmailAndPassword(
-      email: email.trim(),
-      password: password,
-    );
+    try {
+      final credential =
+          await _firebaseAuth.signInWithEmailAndPassword(
+        email: email.trim(),
+        password: password,
+      );
 
-    return _mapUser(credential.user!);
+      return _mapUser(credential.user!);
+    } on FirebaseAuthException catch (error) {
+      throw _handleError(error);
+    }
   }
 
   @override
   Future<AppUser> signUp({
     required String email,
     required String password,
-    String? displayName,
+    required String displayName,
   }) async {
-    final credential = await _firebaseAuth.createUserWithEmailAndPassword(
-      email: email.trim(),
-      password: password,
-    );
+    try {
+      final credential =
+          await _firebaseAuth.createUserWithEmailAndPassword(
+        email: email.trim(),
+        password: password,
+      );
 
-    final user = credential.user!;
+      final user = credential.user!;
 
-    if (displayName != null && displayName.trim().isNotEmpty) {
       await user.updateDisplayName(displayName.trim());
       await user.reload();
-    }
 
-    return _mapUser(_firebaseAuth.currentUser!);
+      return _mapUser(_firebaseAuth.currentUser!);
+    } on FirebaseAuthException catch (error) {
+      throw _handleError(error);
+    }
+  }
+
+  @override
+  Future<void> resetPassword(String email) async {
+    try {
+      await _firebaseAuth.sendPasswordResetEmail(
+        email: email.trim(),
+      );
+    } on FirebaseAuthException catch (error) {
+      throw _handleError(error);
+    }
   }
 
   @override

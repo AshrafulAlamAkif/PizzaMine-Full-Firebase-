@@ -1,3 +1,4 @@
+// Step 3 — User Model
 class AppUser {
   final String id;
   final String email;

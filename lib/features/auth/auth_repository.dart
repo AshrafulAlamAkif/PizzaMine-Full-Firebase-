@@ -1,3 +1,4 @@
+// Step 4 — Authentication Repository
 import 'auth_model.dart';
 
 abstract class AuthRepository {
@@ -11,8 +12,10 @@ abstract class AuthRepository {
   Future<AppUser> signUp({
     required String email,
     required String password,
-    String? displayName,
+    required String displayName,
   });
+
+  Future<void> resetPassword(String email);
 
   Future<void> signOut();
 }
