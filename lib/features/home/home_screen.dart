@@ -8,162 +8,510 @@ import 'package:go_router/go_router.dart';
 import '../auth/auth_provider.dart';
 import '../customer/customer_provider.dart';
 
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  static const Color primaryColor = Color(0xFFE53935);
+  static const Color backgroundColor = Color(0xFFFFFAF5);
+
+  final TextEditingController _searchController =
+      TextEditingController();
+
+  String _selectedCategory = 'All';
+  String _searchQuery = '';
+
+  final List<String> _categories = [
+    'All',
+    'Classic',
+    'Chicken',
+    'Beef',
+    'Vegetarian',
+  ];
+
+  final List<PizzaProduct> _products = [
+    PizzaProduct(
+      name: 'Margherita',
+      description: 'Classic cheese and tomato',
+      price: 399,
+      rating: 4.8,
+      category: 'Classic',
+      emoji: '🍕',
+    ),
+    PizzaProduct(
+      name: 'Chicken Supreme',
+      description: 'Chicken, cheese and vegetables',
+      price: 549,
+      rating: 4.9,
+      category: 'Chicken',
+      emoji: '🍕',
+    ),
+    PizzaProduct(
+      name: 'BBQ Chicken',
+      description: 'Smoky BBQ chicken delight',
+      price: 599,
+      rating: 4.7,
+      category: 'Chicken',
+      emoji: '🍕',
+    ),
+    PizzaProduct(
+      name: 'Beef Pepperoni',
+      description: 'Beef pepperoni and mozzarella',
+      price: 649,
+      rating: 4.8,
+      category: 'Beef',
+      emoji: '🍕',
+    ),
+    PizzaProduct(
+      name: 'Veggie Delight',
+      description: 'Fresh vegetables and cheese',
+      price: 449,
+      rating: 4.6,
+      category: 'Vegetarian',
+      emoji: '🍕',
+    ),
+  ];
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<PizzaProduct> get _filteredProducts {
+    return _products.where((product) {
+      final matchesCategory =
+          _selectedCategory == 'All' ||
+          product.category == _selectedCategory;
+
+      final matchesSearch =
+          product.name.toLowerCase().contains(
+                _searchQuery.toLowerCase(),
+              );
+
+      return matchesCategory && matchesSearch;
+    }).toList();
+  }
+
+  Future<void> _logout() async {
+    try {
+      await ref.read(authRepositoryProvider).signOut();
+
+      if (mounted) {
+        context.go('/login');
+      }
+    } catch (_) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Unable to logout. Please try again.'),
+        ),
+      );
+    }
+  }
+
+  Future<void> _editProfile() async {
+    final updated = await context.push<bool>('/edit-profile');
+
+    if (updated == true && mounted) {
+      ref.invalidate(customerProfileProvider);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Profile updated successfully!'),
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final customerState = ref.watch(customerProfileProvider);
 
     return Scaffold(
+      backgroundColor: backgroundColor,
       appBar: AppBar(
-        title: const Text(
-          'Pizzamine',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
+        backgroundColor: backgroundColor,
+        elevation: 0,
+        title: const Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Pizzamine',
+              style: TextStyle(
+                fontSize: 23,
+                fontWeight: FontWeight.bold,
+                color: primaryColor,
+              ),
+            ),
+            Text(
+              'A little slice of happiness.',
+              style: TextStyle(
+                fontSize: 11,
+                color: Colors.grey,
+              ),
+            ),
+          ],
         ),
         actions: [
           IconButton(
             tooltip: 'Edit Profile',
-            onPressed: () async {
-              final updated = await context.push<bool>(
-                '/edit-profile',
-              );
-
-              if (updated == true && context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Profile updated successfully!'),
-                  ),
-                );
-              }
-            },
-            icon: const Icon(Icons.edit_outlined),
+            onPressed: _editProfile,
+            icon: const Icon(
+              Icons.account_circle_outlined,
+              color: primaryColor,
+            ),
           ),
           IconButton(
             tooltip: 'Logout',
-            onPressed: () async {
-              await ref
-                  .read(authRepositoryProvider)
-                  .signOut();
-
-              if (context.mounted) {
-                context.go('/login');
-              }
-            },
+            onPressed: _logout,
             icon: const Icon(Icons.logout),
           ),
+          const SizedBox(width: 8),
         ],
       ),
       body: customerState.when(
         loading: () => const Center(
-          child: CircularProgressIndicator(),
+          child: CircularProgressIndicator(
+            color: primaryColor,
+          ),
         ),
         error: (error, stackTrace) => Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.error_outline,
-                  color: Colors.red,
-                  size: 48,
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  'Unable to load customer profile.',
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 12),
-                ElevatedButton(
-                  onPressed: () {
-                    ref.invalidate(customerProfileProvider);
-                  },
-                  child: const Text('Retry'),
-                ),
-              ],
-            ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Unable to load customer profile.'),
+              const SizedBox(height: 12),
+              ElevatedButton(
+                onPressed: () {
+                  ref.invalidate(customerProfileProvider);
+                },
+                child: const Text('Retry'),
+              ),
+            ],
           ),
         ),
         data: (customer) {
           if (customer == null) {
             return const Center(
-              child: Text(
-                'Customer profile not found.',
-              ),
+              child: Text('Customer profile not found.'),
             );
           }
 
-          return Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    Icons.account_circle,
-                    size: 90,
-                    color: Color(0xFFE53935),
+          final products = _filteredProducts;
+
+          return SingleChildScrollView(
+            padding: const EdgeInsets.only(bottom: 30),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Greeting
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Hello, ${customer.fullName.split(' ').first}! 👋',
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      const Text(
+                        'What would you like to eat today?',
+                        style: TextStyle(
+                          color: Colors.grey,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 20),
-                  const Text(
-                    'Welcome to Pizzamine!',
+                ),
+
+                // Search
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                  ),
+                  child: TextField(
+                    controller: _searchController,
+                    onChanged: (value) {
+                      setState(() {
+                        _searchQuery = value;
+                      });
+                    },
+                    decoration: InputDecoration(
+                      hintText: 'Search your favorite pizza...',
+                      prefixIcon: const Icon(
+                        Icons.search,
+                        color: primaryColor,
+                      ),
+                      suffixIcon: _searchQuery.isNotEmpty
+                          ? IconButton(
+                              onPressed: () {
+                                _searchController.clear();
+                                setState(() {
+                                  _searchQuery = '';
+                                });
+                              },
+                              icon: const Icon(Icons.close),
+                            )
+                          : null,
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 26),
+
+                // Featured Banner
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                  ),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(22),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [
+                          Color(0xFFE53935),
+                          Color(0xFFB71C1C),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(22),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment:
+                                CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'SPECIAL OFFER',
+                                style: TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1.2,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              const Text(
+                                'Pizza Time!',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 27,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              const Text(
+                                'Discover delicious flavors\nmade just for you.',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 13,
+                                  height: 1.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Text(
+                          '🍕',
+                          style: TextStyle(fontSize: 85),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 28),
+
+                // Categories
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                  ),
+                  child: const Text(
+                    'Categories',
                     style: TextStyle(
-                      fontSize: 24,
+                      fontSize: 20,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(height: 24),
-                  Card(
+                ),
+
+                const SizedBox(height: 14),
+
+                SizedBox(
+                  height: 42,
+                  child: ListView.separated(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                    ),
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _categories.length,
+                    separatorBuilder: (_, __) =>
+                        const SizedBox(width: 10),
+                    itemBuilder: (context, index) {
+                      final category = _categories[index];
+                      final selected =
+                          category == _selectedCategory;
+
+                      return ChoiceChip(
+                        label: Text(category),
+                        selected: selected,
+                        selectedColor: primaryColor,
+                        backgroundColor: Colors.white,
+                        labelStyle: TextStyle(
+                          color: selected
+                              ? Colors.white
+                              : Colors.black87,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        onSelected: (_) {
+                          setState(() {
+                            _selectedCategory = category;
+                          });
+                        },
+                      );
+                    },
+                  ),
+                ),
+
+                const SizedBox(height: 28),
+
+                // Popular Products
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                  ),
+                  child: Row(
+                    mainAxisAlignment:
+                        MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Popular Pizza',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        '${products.length} items',
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                if (products.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.all(30),
+                    child: Center(
+                      child: Text(
+                        'No pizza found.',
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    ),
+                  )
+                else
+                  SizedBox(
+                    height: 245,
+                    child: ListView.separated(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                      ),
+                      scrollDirection: Axis.horizontal,
+                      itemCount: products.length,
+                      separatorBuilder: (_, __) =>
+                          const SizedBox(width: 14),
+                      itemBuilder: (context, index) {
+                        return _productCard(products[index]);
+                      },
+                    ),
+                  ),
+
+                const SizedBox(height: 28),
+
+                // Customer Profile
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                  ),
+                  child: Card(
+                    elevation: 0,
+                    color: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18),
+                    ),
                     child: Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment:
-                            CrossAxisAlignment.start,
+                      padding: const EdgeInsets.all(18),
+                      child: Row(
                         children: [
-                          const Text(
-                            'Customer Profile',
-                            style: TextStyle(
-                              fontSize: 19,
-                              fontWeight: FontWeight.bold,
+                          const CircleAvatar(
+                            backgroundColor: Color(0xFFFFEBEE),
+                            child: Icon(
+                              Icons.person,
+                              color: primaryColor,
                             ),
                           ),
-                          const SizedBox(height: 20),
-                          _profileItem(
-                            Icons.person_outline,
-                            'Full Name',
-                            customer.fullName,
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment:
+                                  CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Your Account',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  customer.email,
+                                  style: const TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                          _profileItem(
-                            Icons.email_outlined,
-                            'Email',
-                            customer.email,
-                          ),
-                          _profileItem(
-                            Icons.phone_outlined,
-                            'Phone',
-                            customer.phoneNumber ?? 'Not added',
-                          ),
-                          _profileItem(
-                            Icons.verified_user_outlined,
-                            'Account Status',
-                            customer.isActive
-                                ? 'Active'
-                                : 'Inactive',
-                          ),
-                          _profileItem(
-                            Icons.badge_outlined,
-                            'Role',
-                            customer.role,
+                          IconButton(
+                            onPressed: _editProfile,
+                            icon: const Icon(
+                              Icons.arrow_forward_ios,
+                              size: 16,
+                              color: primaryColor,
+                            ),
                           ),
                         ],
                       ),
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           );
         },
@@ -171,38 +519,94 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _profileItem(
-    IconData icon,
-    String title,
-    String value,
-  ) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 18),
-      child: Row(
-        children: [
-          Icon(
-            icon,
-            color: const Color(0xFFE53935),
+  Widget _productCard(PizzaProduct product) {
+    return Container(
+      width: 190,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
-          const SizedBox(width: 12),
-          Expanded(
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            height: 112,
+            width: double.infinity,
+            decoration: const BoxDecoration(
+              color: Color(0xFFFFEBEE),
+              borderRadius: BorderRadius.vertical(
+                top: Radius.circular(18),
+              ),
+            ),
+            child: Center(
+              child: Text(
+                product.emoji,
+                style: const TextStyle(fontSize: 68),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  title,
-                  style: const TextStyle(
-                    color: Colors.grey,
-                    fontSize: 12,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  value,
+                  product.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     fontSize: 15,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.bold,
                   ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  product.description,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.grey,
+                    fontSize: 11,
+                  ),
+                ),
+                const SizedBox(height: 9),
+                Row(
+                  mainAxisAlignment:
+                      MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '৳${product.price}',
+                      style: const TextStyle(
+                        color: primaryColor,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.star,
+                          color: Colors.amber,
+                          size: 16,
+                        ),
+                        const SizedBox(width: 3),
+                        Text(
+                          product.rating.toString(),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -211,4 +615,22 @@ class HomeScreen extends ConsumerWidget {
       ),
     );
   }
+}
+
+class PizzaProduct {
+  final String name;
+  final String description;
+  final int price;
+  final double rating;
+  final String category;
+  final String emoji;
+
+  const PizzaProduct({
+    required this.name,
+    required this.description,
+    required this.price,
+    required this.rating,
+    required this.category,
+    required this.emoji,
+  });
 }

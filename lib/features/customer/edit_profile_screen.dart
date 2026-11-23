@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'customer_provider.dart';
-import 'customer_model.dart';
 
 class EditProfileScreen extends ConsumerStatefulWidget {
   const EditProfileScreen({super.key});
@@ -21,8 +20,8 @@ class _EditProfileScreenState
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
 
-  bool _isInitialized = false;
-  bool _isLoading = false;
+  bool _isSaving = false;
+  bool _initialized = false;
 
   @override
   void dispose() {
@@ -31,22 +30,24 @@ class _EditProfileScreenState
     super.dispose();
   }
 
-  Future<void> _saveProfile(Customer customer) async {
-  if (!_formKey.currentState!.validate()) return;
+  Future<void> _saveProfile(String uid) async {
+    if (!_formKey.currentState!.validate()) return;
 
-    setState(() => _isLoading = true);
+    setState(() => _isSaving = true);
 
     try {
       await ref.read(customerRepositoryProvider).updateCustomer(
-        uid: customer.uid,
-        fullName: _nameController.text.trim(),
-        phoneNumber: _phoneController.text.trim(),
-      );
-
-      ref.invalidate(customerProfileProvider);
+            uid: uid,
+            fullName: _nameController.text.trim(),
+            phoneNumber: _phoneController.text.trim(),
+          );
 
       if (!mounted) return;
 
+      // Reload customer profile
+      ref.invalidate(customerProfileProvider);
+
+      // Return to Home Screen
       context.pop(true);
     } catch (_) {
       if (!mounted) return;
@@ -61,7 +62,7 @@ class _EditProfileScreenState
       );
     } finally {
       if (mounted) {
-        setState(() => _isLoading = false);
+        setState(() => _isSaving = false);
       }
     }
   }
@@ -93,10 +94,11 @@ class _EditProfileScreenState
             );
           }
 
-          if (!_isInitialized) {
+          // Initialize fields only once
+          if (!_initialized) {
             _nameController.text = customer.fullName;
             _phoneController.text = customer.phoneNumber ?? '';
-            _isInitialized = true;
+            _initialized = true;
           }
 
           return SingleChildScrollView(
@@ -137,7 +139,7 @@ class _EditProfileScreenState
                     validator: (value) {
                       if (value == null ||
                           value.trim().isEmpty) {
-                        return 'Please enter your name.';
+                        return 'Please enter your full name.';
                       }
 
                       return null;
@@ -154,6 +156,14 @@ class _EditProfileScreenState
                       prefixIcon: Icon(Icons.phone_outlined),
                       border: OutlineInputBorder(),
                     ),
+                    validator: (value) {
+                      if (value != null &&
+                          value.trim().length > 20) {
+                        return 'Phone number is too long.';
+                      }
+
+                      return null;
+                    },
                   ),
 
                   const SizedBox(height: 20),
@@ -173,10 +183,10 @@ class _EditProfileScreenState
                   SizedBox(
                     height: 54,
                     child: ElevatedButton(
-                      onPressed: _isLoading
+                      onPressed: _isSaving
                           ? null
-                          : () => _saveProfile(customer),
-                      child: _isLoading
+                          : () => _saveProfile(customer.uid),
+                      child: _isSaving
                           ? const SizedBox(
                               height: 22,
                               width: 22,
@@ -188,8 +198,8 @@ class _EditProfileScreenState
                           : const Text(
                               'Save Changes',
                               style: TextStyle(
-                                fontWeight: FontWeight.bold,
                                 fontSize: 16,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
                     ),
