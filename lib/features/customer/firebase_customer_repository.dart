@@ -20,6 +20,7 @@ class FirebaseCustomerRepository
     await _customers.doc(customer.uid).set({
       ...customer.toMap(),
       'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
     });
   }
 
@@ -27,20 +28,10 @@ class FirebaseCustomerRepository
   Future<Customer?> getCustomer(String uid) async {
     final snapshot = await _customers.doc(uid).get();
 
-    if (!snapshot.exists) return null;
+    if (!snapshot.exists) {
+      return null;
+    }
 
-    final data = snapshot.data()!;
-
-    return Customer(
-      uid: data['uid'] as String,
-      fullName: data['fullName'] as String,
-      email: data['email'] as String,
-      phoneNumber: data['phoneNumber'] as String?,
-      role: data['role'] as String,
-      isActive: data['isActive'] as bool,
-      installationId: data['installationId'] as String,
-      platform: data['platform'] as String,
-      createdAt: (data['createdAt'] as Timestamp).toDate(),
-    );
+    return Customer.fromMap(snapshot.data()!);
   }
 }

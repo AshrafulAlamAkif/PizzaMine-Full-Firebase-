@@ -43,16 +43,30 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final repository = ref.read(authRepositoryProvider);
+      // final repository = ref.read(authRepositoryProvider);
+
+      // if (widget.isRegister) {
+      //   await repository.signUp(
+      //     email: _emailController.text,
+      //     password: _passwordController.text,
+      //     displayName: _nameController.text,
+      //   );
+      // } else {
+      //   await repository.signIn(
+      //     email: _emailController.text,
+      //     password: _passwordController.text,
+      //   );
+      // }
+      final authService = ref.read(authServiceProvider);
 
       if (widget.isRegister) {
-        await repository.signUp(
+        await authService.signUp(
           email: _emailController.text,
           password: _passwordController.text,
           displayName: _nameController.text,
         );
       } else {
-        await repository.signIn(
+        await authService.signIn(
           email: _emailController.text,
           password: _passwordController.text,
         );
