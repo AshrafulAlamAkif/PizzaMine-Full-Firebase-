@@ -28,10 +28,21 @@ class FirebaseCustomerRepository
   Future<Customer?> getCustomer(String uid) async {
     final snapshot = await _customers.doc(uid).get();
 
-    if (!snapshot.exists) {
-      return null;
-    }
+    if (!snapshot.exists) return null;
 
     return Customer.fromMap(snapshot.data()!);
+  }
+
+  @override
+  Future<void> updateCustomer({
+    required String uid,
+    required String fullName,
+    required String phoneNumber,
+  }) async {
+    await _customers.doc(uid).update({
+      'fullName': fullName.trim(),
+      'phoneNumber': phoneNumber.trim(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
   }
 }

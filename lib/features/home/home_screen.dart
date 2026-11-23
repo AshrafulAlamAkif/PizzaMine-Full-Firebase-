@@ -25,6 +25,23 @@ class HomeScreen extends ConsumerWidget {
         ),
         actions: [
           IconButton(
+            tooltip: 'Edit Profile',
+            onPressed: () async {
+              final updated = await context.push<bool>(
+                '/edit-profile',
+              );
+
+              if (updated == true && context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Profile updated successfully!'),
+                  ),
+                );
+              }
+            },
+            icon: const Icon(Icons.edit_outlined),
+          ),
+          IconButton(
             tooltip: 'Logout',
             onPressed: () async {
               await ref
