@@ -9,6 +9,7 @@ import '../features/auth/auth_screen.dart';
 import '../features/auth/email_verification_screen.dart';
 import '../features/home/home_screen.dart';
 import '../features/customer/edit_profile_screen.dart';
+import '../features/menu/menu_screen.dart';
 
 // Listen to Firebase authentication changes.
 class AuthRefreshListenable extends ChangeNotifier {
@@ -43,7 +44,8 @@ final GoRouter appRouter = GoRouter(
 
     final isProtectedRoute =
         location == '/home' ||
-        location == '/edit-profile';
+        location == '/edit-profile' ||
+        location == '/menu';
 
     // User must be logged in to access protected routes.
     if (isProtectedRoute && !isLoggedIn) {
@@ -102,6 +104,11 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/edit-profile',
       builder: (context, state) => const EditProfileScreen(),
+    ),
+
+    GoRoute(
+      path: '/menu',
+      builder: (context, state) => const MenuScreen(),
     ),
   ],
 );
