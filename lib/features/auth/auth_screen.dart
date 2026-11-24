@@ -65,18 +65,19 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
           password: _passwordController.text,
           displayName: _nameController.text,
         );
+
+        if (!mounted) return;
+
+        context.go('/verify-email');
+
       } else {
         await authService.signIn(
           email: _emailController.text,
           password: _passwordController.text,
         );
-      }
 
-      if (!mounted) return;
+        if (!mounted) return;
 
-      if (widget.isRegister) {
-        context.go('/verify-email');
-      } else {
         context.go('/home');
       }
 

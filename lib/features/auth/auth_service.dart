@@ -20,6 +20,7 @@ class AuthService {
         _customerRepository = customerRepository,
         _deviceService = deviceService;
 
+  // Create customer profile before email verification.
   Future<void> _ensureCustomer(AppUser user) async {
     try {
       // Check whether customer document already exists.
@@ -29,7 +30,7 @@ class AuthService {
       if (existingCustomer != null) {
         return;
       }
-
+      
       // Get installation ID.
       final installationId =
           await _deviceService.getInstallationId();
@@ -60,6 +61,7 @@ class AuthService {
     }
   }
 
+  // Registration
   Future<AppUser> signUp({
     required String email,
     required String password,
@@ -78,6 +80,7 @@ class AuthService {
     return user;
   }
 
+  // Login
   Future<AppUser> signIn({
     required String email,
     required String password,

@@ -125,6 +125,11 @@ class FirebaseAuthRepository implements AuthRepository {
 
       await user.sendEmailVerification();
     } on FirebaseAuthException catch (error) {
+      if (error.code == 'too-many-requests') {
+        throw const AppException(
+          'Verification email requests are temporarily limited. Please wait and try again later.',
+        );
+      }
       throw _handleError(error);
     }
   }
