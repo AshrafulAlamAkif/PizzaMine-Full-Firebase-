@@ -73,6 +73,8 @@ class AuthService {
 
     await _ensureCustomer(user);
 
+    await sendEmailVerification();
+
     return user;
   }
 
@@ -88,5 +90,15 @@ class AuthService {
     await _ensureCustomer(user);
 
     return user;
+  }
+
+  // Send email verification link to the authenticated user.
+  Future<void> sendEmailVerification() async {
+    await _authRepository.sendEmailVerification();
+  }
+
+  // Reload current user and check whether email is verified.
+  Future<bool> checkEmailVerification() async {
+    return _authRepository.reloadCurrentUser();
   }
 }

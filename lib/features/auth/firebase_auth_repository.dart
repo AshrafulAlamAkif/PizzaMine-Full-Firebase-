@@ -23,24 +23,36 @@ class FirebaseAuthRepository implements AuthRepository {
   AppException _handleError(FirebaseAuthException error) {
     switch (error.code) {
       case 'invalid-email':
-        return const AppException('Please enter a valid email address.');
+        return const AppException(
+          'Please enter a valid email address.',
+        );
 
       case 'user-not-found':
       case 'wrong-password':
       case 'invalid-credential':
-        return const AppException('Incorrect email or password.');
+        return const AppException(
+          'Incorrect email or password.',
+        );
 
       case 'email-already-in-use':
-        return const AppException('This email is already registered.');
+        return const AppException(
+          'This email is already registered.',
+        );
 
       case 'weak-password':
-        return const AppException('Please choose a stronger password.');
+        return const AppException(
+          'Please choose a stronger password.',
+        );
 
       case 'network-request-failed':
-        return const AppException('Network error. Please try again.');
+        return const AppException(
+          'Network error. Please try again.',
+        );
 
       case 'too-many-requests':
-        return const AppException('Too many attempts. Try again later.');
+        return const AppException(
+          'Too many attempts. Try again later.',
+        );
 
       default:
         return const AppException(
@@ -51,7 +63,7 @@ class FirebaseAuthRepository implements AuthRepository {
 
   @override
   Stream<AppUser?> get authStateChanges {
-    return _firebaseAuth.authStateChanges().map(
+    return _firebaseAuth.userChanges().map(
       (user) => user == null ? null : _mapUser(user),
     );
   }
@@ -93,6 +105,40 @@ class FirebaseAuthRepository implements AuthRepository {
       await user.reload();
 
       return _mapUser(_firebaseAuth.currentUser!);
+    } on FirebaseAuthException catch (error) {
+      throw _handleError(error);
+    }
+  }
+
+  @override
+  Future<void> sendEmailVerification() async {
+    try {
+      final user = _firebaseAuth.currentUser;
+
+      if (user == null) {
+        throw const AppException(
+          'Please sign in first.',
+        );
+      }
+
+      if (user.emailVerified) return;
+
+      await user.sendEmailVerification();
+    } on FirebaseAuthException catch (error) {
+      throw _handleError(error);
+    }
+  }
+
+  @override
+  Future<bool> reloadCurrentUser() async {
+    try {
+      final user = _firebaseAuth.currentUser;
+
+      if (user == null) return false;
+
+      await user.reload();
+
+      return _firebaseAuth.currentUser?.emailVerified ?? false;
     } on FirebaseAuthException catch (error) {
       throw _handleError(error);
     }

@@ -74,13 +74,17 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
 
       if (!mounted) return;
 
-      context.go('/home');
+      if (widget.isRegister) {
+        context.go('/verify-email');
+      } else {
+        context.go('/home');
+      }
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
             widget.isRegister
-                ? 'Account created successfully!'
+                ? 'Verification email sent. Please check your inbox.'
                 : 'Welcome back to Pizzamine!',
           ),
         ),

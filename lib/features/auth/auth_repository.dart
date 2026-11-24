@@ -16,6 +16,9 @@ abstract class AuthRepository {
   });
 
   Future<void> resetPassword(String email);
+  // Email Verification করতে নিচের দুটি নতুন method
+  Future<void> sendEmailVerification();
+  Future<bool> reloadCurrentUser();
 
   Future<void> signOut();
 }
