@@ -76,9 +76,16 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
           password: _passwordController.text,
         );
 
+        final isVerified =
+            await authService.checkEmailVerification();
+
         if (!mounted) return;
 
-        context.go('/home');
+        if (!isVerified) {
+          context.go('/verify-email');
+        } else {
+          context.go('/home');
+        }
       }
 
       ScaffoldMessenger.of(context).showSnackBar(

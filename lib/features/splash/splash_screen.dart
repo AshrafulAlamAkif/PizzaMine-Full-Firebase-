@@ -12,12 +12,35 @@ class SplashScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ref.listen(authStateProvider, (previous, next) {
-      next.whenData((user) {
+    ref.listen(authStateProvider, (previous, next) async {
+      if (!next.hasValue) return;
+
+      final user = next.requireValue;
+
+      if (!context.mounted) return;
+
+      if (user == null) {
+        context.go('/login');
+        return;
+      }
+
+      try {
+        final isVerified = await ref
+            .read(authServiceProvider)
+            .checkEmailVerification();
+
         if (!context.mounted) return;
 
-        context.go(user == null ? '/login' : '/home');
-      });
+        if (isVerified) {
+          context.go('/home');
+        } else {
+          context.go('/verify-email');
+        }
+      } catch (_) {
+        if (!context.mounted) return;
+
+        context.go('/verify-email');
+      }
     });
 
     return Scaffold(
