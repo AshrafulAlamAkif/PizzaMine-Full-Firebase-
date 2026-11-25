@@ -496,8 +496,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           itemCount: products.length,
                           separatorBuilder: (_, __) =>
                               const SizedBox(width: 14),
+                          // itemBuilder: (context, index) {
+                          //   return _productCard(products[index]);
+                          // },
+                          // Click Event যোগ
                           itemBuilder: (context, index) {
-                            return _productCard(products[index]);
+                            final product = products[index];
+
+                            return GestureDetector(
+                              onTap: () {
+                                context.push('/product/${product.id}');
+                              },
+                              child: _productCard(product),
+                            );
                           },
                         ),
                       ),
