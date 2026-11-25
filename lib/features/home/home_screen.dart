@@ -9,6 +9,7 @@ import '../auth/auth_provider.dart';
 import '../customer/customer_provider.dart';
 import '../menu/menu_model.dart';
 import '../menu/menu_provider.dart';
+import '../category/category_provider.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -27,13 +28,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   String _selectedCategory = 'All';
   String _searchQuery = '';
 
-  final List<String> _categories = [
-    'All',
-    'Classic',
-    'Chicken',
-    'Beef',
-    'Vegetarian',
-  ];
+  // final List<String> _categories = [
+  //   'All',
+  //   'Classic',
+  //   'Chicken',
+  //   'Beef',
+  //   'Vegetarian',
+  // ];
 
   @override
   void dispose() {
@@ -94,6 +95,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     final customerState = ref.watch(customerProfileProvider);
     final productState = ref.watch(availableProductsProvider);
+    final categoryState = ref.watch(activeCategoriesProvider);
 
     return Scaffold(
       backgroundColor: backgroundColor,
@@ -350,9 +352,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                     // Categories
                     const Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 20,
-                      ),
+                      padding: EdgeInsets.symmetric(horizontal: 20),
                       child: Text(
                         'Categories',
                         style: TextStyle(
@@ -366,34 +366,78 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                     SizedBox(
                       height: 42,
-                      child: ListView.separated(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
+                      child: categoryState.when(
+                        loading: () => const Center(
+                          child: CircularProgressIndicator(
+                            color: primaryColor,
+                          ),
                         ),
-                        scrollDirection: Axis.horizontal,
-                        itemCount: _categories.length,
-                        separatorBuilder: (_, __) =>
-                            const SizedBox(width: 10),
-                        itemBuilder: (context, index) {
-                          final category = _categories[index];
-                          final selected =
-                              category == _selectedCategory;
+                        // error: (error, stackTrace) => Center(
+                        //   child: TextButton(
+                        //     onPressed: () {
+                        //       ref.invalidate(activeCategoriesProvider);
+                        //     },
+                        //     child: const Text('Retry loading categories'),
+                        //   ),
+                        // ),
+                        error: (error, stackTrace) => Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            children: [
+                              const Text(
+                                'Unable to load categories.',
+                                style: TextStyle(
+                                  color: Colors.red,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                error.toString(),
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(fontSize: 12),
+                              ),
+                              const SizedBox(height: 8),
+                              ElevatedButton(
+                                onPressed: () {
+                                  ref.invalidate(activeCategoriesProvider);
+                                },
+                                child: const Text('Retry'),
+                              ),
+                            ],
+                          ),
+                        ),
+                        data: (categories) {
+                          final categoryNames = [
+                            'All',
+                            ...categories.map((category) => category.name),
+                          ];
 
-                          return ChoiceChip(
-                            label: Text(category),
-                            selected: selected,
-                            selectedColor: primaryColor,
-                            backgroundColor: Colors.white,
-                            labelStyle: TextStyle(
-                              color: selected
-                                  ? Colors.white
-                                  : Colors.black87,
-                              fontWeight: FontWeight.w600,
-                            ),
-                            onSelected: (_) {
-                              setState(() {
-                                _selectedCategory = category;
-                              });
+                          return ListView.separated(
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            scrollDirection: Axis.horizontal,
+                            itemCount: categoryNames.length,
+                            separatorBuilder: (_, __) =>
+                                const SizedBox(width: 10),
+                            itemBuilder: (context, index) {
+                              final category = categoryNames[index];
+                              final selected = category == _selectedCategory;
+
+                              return ChoiceChip(
+                                label: Text(category),
+                                selected: selected,
+                                selectedColor: primaryColor,
+                                backgroundColor: Colors.white,
+                                labelStyle: TextStyle(
+                                  color: selected ? Colors.white : Colors.black87,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                onSelected: (_) {
+                                  setState(() {
+                                    _selectedCategory = category;
+                                  });
+                                },
+                              );
                             },
                           );
                         },
